@@ -4,174 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>چت امنیتی</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
         body {
-            background-color: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        .chat-message {
+            animation: fadeIn 0.3s ease-in-out;
         }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-        }
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        input, select, button {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        #chatBox {
-            margin-top: 20px;
-            border: 1px solid #eee;
-            padding: 15px;
-            border-radius: 4px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        #messages {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .message {
-            padding: 8px 12px;
-            border-radius: 4px;
-            max-width: 70%;
-        }
-        .message.self {
-            align-self: flex-end;
-            background-color: #3498db;
-            color: white;
-        }
-        .message.other {
-            align-self: flex-start;
-            background-color: #ecf0f1;
-        }
-        .hidden {
-            display: none;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>چت امنیتی</h1>
-        
-        <form id="joinForm">
-            <input type="text" id="groupKey" placeholder="کلید گروه" required>
-            <button type="submit">ورود به گروه</button>
-        </form>
-
-        <div id="roleSelection" class="hidden">
-            <h2>نقش خود را انتخاب کنید</h2>
-            <select id="roleSelect"></select>
-            <button id="startChat">شروع چت</button>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-8 px-4">
+    <div class="w-full max-w-md bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- هدر -->
+        <div class="bg-blue-600 text-white p-4">
+            <h1 class="text-xl font-bold text-center">ورود به چت گروهی</h1>
         </div>
 
-        <div id="chatBox" class="hidden">
-            <h2>چت (<span id="currentRole"></span>)</h2>
-            <div id="messages"></div>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="messageInput" placeholder="پیام شما..." style="flex-grow: 1;">
-                <button id="sendButton">ارسال</button>
+        <!-- فرم ورود -->
+        <div id="joinForm" class="p-6">
+            <div class="mb-4">
+                <label for="groupKey" class="block text-gray-700 mb-2">کلید گروه:</label>
+                <input type="text" id="groupKey" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="مثال: group1" required>
+            </div>
+            <button id="joinButton" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">ورود</button>
+        </div>
+
+        <!-- انتخاب نقش -->
+        <div id="roleSelection" class="hidden p-6">
+            <div class="mb-4">
+                <label for="roleSelect" class="block text-gray-700 mb-2">نقش خود را انتخاب کنید:</label>
+                <select id="roleSelect" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
+            <button id="startChat" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">شروع چت</button>
+        </div>
+
+        <!-- پنجره چت -->
+        <div id="chatBox" class="hidden flex flex-col h-96">
+            <div class="bg-blue-600 text-white p-4 flex justify-between items-center">
+                <h2 id="currentRole" class="font-bold"></h2>
+                <span id="groupName" class="text-sm"></span>
+            </div>
+            <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+            <div class="p-4 border-t flex">
+                <input type="text" id="messageInput" class="flex-1 px-4 py-2 border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="پیام شما...">
+                <button id="sendButton" class="bg-blue-600 text-white px-4 py-2 rounded-l-lg hover:bg-blue-700 transition">ارسال</button>
             </div>
         </div>
     </div>
 
     <script>
+        // تنظیمات پایه
         const groupKeyInput = document.getElementById("groupKey");
         const joinForm = document.getElementById("joinForm");
+        const joinButton = document.getElementById("joinButton");
         const roleSelection = document.getElementById("roleSelection");
         const roleSelect = document.getElementById("roleSelect");
-        const startChatBtn = document.getElementById("startChat");
+        const startChat = document.getElementById("startChat");
         const chatBox = document.getElementById("chatBox");
         const messagesDiv = document.getElementById("messages");
         const messageInput = document.getElementById("messageInput");
         const sendButton = document.getElementById("sendButton");
         const currentRoleSpan = document.getElementById("currentRole");
+        const groupNameSpan = document.getElementById("groupName");
 
         let socket;
         let userRole;
+        let groupKey;
 
-        joinForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const groupKey = groupKeyInput.value;
-            const response = await fetch(`https://security-chat.liara.run/get_group_roles?group_key=${groupKey}`);
-            if (response.ok) {
-                const roles = await response.json();
-                roleSelect.innerHTML = '';
-                roles.forEach(role => {
-                    const option = document.createElement("option");
-                    option.value = role;
-                    option.textContent = role;
-                    roleSelect.appendChild(option);
-                });
-                joinForm.classList.add("hidden");
-                roleSelection.classList.remove("hidden");
-            } else {
-                alert("گروه یافت نشد!");
+        // رویداد ورود به گروه
+        joinButton.addEventListener("click", async () => {
+            groupKey = groupKeyInput.value;
+            if (!groupKey) return;
+
+            try {
+                const response = await fetch(`https://security-chat.liara.run/get_group_roles?group_key=${groupKey}`);
+                if (response.ok) {
+                    const roles = await response.json();
+                    roleSelect.innerHTML = '';
+                    roles.forEach(role => {
+                        const option = document.createElement("option");
+                        option.value = role;
+                        option.textContent = role;
+                        roleSelect.appendChild(option);
+                    });
+                    joinForm.classList.add("hidden");
+                    roleSelection.classList.remove("hidden");
+                } else {
+                    alert("گروه یافت نشد!");
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("خطا در ارتباط با سرور");
             }
         });
 
-        startChatBtn.addEventListener("click", () => {
+        // رویداد شروع چت
+        startChat.addEventListener("click", () => {
             userRole = roleSelect.value;
-            currentRoleSpan.textContent = userRole;
+            if (!userRole) return;
+
+            currentRoleSpan.textContent = `چت به عنوان: ${userRole}`;
+            groupNameSpan.textContent = `گروه: ${groupKey}`;
             roleSelection.classList.add("hidden");
             chatBox.classList.remove("hidden");
 
-            socket = new WebSocket(`wss://security-chat.liara.run/ws/${groupKeyInput.value}/${userRole}`);
+            // اتصال به WebSocket
+            socket = new WebSocket(`wss://security-chat.liara.run/ws/${groupKey}/${userRole}`);
+
             socket.onmessage = (event) => {
-                const message = document.createElement("div");
-                message.textContent = event.data;
-                message.classList.add("message", "other");
-                messagesDiv.appendChild(message);
+                const messageDiv = document.createElement("div");
+                messageDiv.className = "chat-message bg-gray-100 p-3 rounded-lg";
+                messageDiv.textContent = event.data;
+                messagesDiv.appendChild(messageDiv);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             };
         });
 
-        function sendMessage() {
+        // ارسال پیام
+        sendButton.addEventListener("click", () => {
             const message = messageInput.value;
             if (message && socket) {
-                const messageElement = document.createElement("div");
-                messageElement.textContent = message;
-                messageElement.classList.add("message", "self");
-                messagesDiv.appendChild(messageElement);
                 socket.send(message);
                 messageInput.value = "";
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
-        }
+        });
 
-        sendButton.addEventListener("click", sendMessage);
+        // ارسال با Enter
         messageInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendMessage();
+            if (e.key === "Enter") {
+                sendButton.click();
+            }
         });
     </script>
 </body>
